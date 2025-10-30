@@ -1,0 +1,5 @@
+{
+  "name": "Copy of Global SCM Document Dashboard",
+  "description": "An integrated dashboard for managing, tracking, and analyzing global shipping documents. It provides real-time status updates, facilitates file uploads, and uses AI to automatically extract key data from documents for streamlined supply chain management.",
+  "requestFramePermissions": []
+}
