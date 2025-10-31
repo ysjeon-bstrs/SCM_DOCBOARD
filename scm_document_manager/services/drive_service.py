@@ -7,7 +7,7 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 from google.oauth2 import service_account
 from core.exceptions import DriveAPIError, FolderCreationError, FileUploadError
-from config.settings import settings
+from config.settings import get_settings
 from config.logging_config import get_logger
 from utils.retry import retry_on_api_error
 
@@ -22,11 +22,13 @@ class DriveService:
     def __init__(self):
         """Initialize Drive service"""
         try:
+            settings = get_settings()
             credentials = service_account.Credentials.from_service_account_info(
                 settings.google_credentials,
                 scopes=SCOPES
             )
             self.service = build('drive', 'v3', credentials=credentials)
+            self.settings = settings
             logger.info("Drive service initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize Drive service: {e}")
@@ -126,7 +128,7 @@ class DriveService:
             Final folder ID
         """
         parts = folder_path.strip('/').split('/')
-        current_parent_id = root_folder_id or settings.google_drive_root_folder_id
+        current_parent_id = root_folder_id or self.settings.google_drive_root_folder_id
 
         for part in parts:
             # Try to find existing folder

@@ -2,97 +2,89 @@
 Settings management using Pydantic Settings
 """
 import json
+import os
 from typing import Optional
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, field_validator
+import streamlit as st
+
+
+def get_from_streamlit_secrets(key: str, default=None):
+    """Get value from Streamlit secrets or return default"""
+    try:
+        return st.secrets.get(key, default)
+    except:
+        return default
 
 
 class Settings(BaseSettings):
-    """Application settings from environment variables"""
+    """Application settings from environment variables or Streamlit secrets"""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore"
+    )
 
     # Google Drive
     google_drive_root_folder_id: str = Field(
-        ...,
-        env="GOOGLE_DRIVE_ROOT_FOLDER_ID",
+        default="",
         description="Google Drive root folder ID"
     )
 
     # Google Sheets
     invoice_sheet_id: str = Field(
-        ...,
-        env="INVOICE_SHEET_ID",
+        default="",
         description="SCM 통합 시트 ID"
     )
     invoice_sheet_name: str = Field(
         default="scm통합",
-        env="INVOICE_SHEET_NAME",
         description="SCM 통합 시트 탭 이름"
     )
     dashboard_sheet_id: str = Field(
-        ...,
-        env="DASHBOARD_SHEET_ID",
+        default="",
         description="Dashboard 시트 ID"
     )
     dashboard_sheet_name: str = Field(
         default="dashboard",
-        env="DASHBOARD_SHEET_NAME",
         description="Dashboard 시트 탭 이름"
     )
 
     # Google Service Account
     google_credentials_path: Optional[str] = Field(
         default=None,
-        env="GOOGLE_CREDENTIALS_PATH",
         description="Service account JSON file path"
     )
     google_credentials_json: Optional[str] = Field(
         default=None,
-        env="GOOGLE_CREDENTIALS_JSON",
         description="Service account JSON string"
     )
 
     # Default Uploader (Phase 1)
     default_uploader: str = Field(
-        default="전용수",
-        env="DEFAULT_UPLOADER",
+        default="Admin",
         description="Default uploader name"
     )
 
     # File Upload Settings
     max_file_size_mb: int = Field(
         default=8,
-        env="MAX_FILE_SIZE_MB",
         description="Maximum file size in MB"
     )
 
     # Logging
     log_level: str = Field(
         default="INFO",
-        env="LOG_LEVEL",
         description="Logging level"
     )
 
     # Phase 2: AI/Vector DB (optional)
-    gemini_api_key: Optional[str] = Field(
-        default=None,
-        env="GEMINI_API_KEY"
-    )
-    chroma_api_key: Optional[str] = Field(
-        default=None,
-        env="CHROMA_API_KEY"
-    )
-    chroma_tenant: Optional[str] = Field(
-        default=None,
-        env="CHROMA_TENANT"
-    )
-    chroma_database: Optional[str] = Field(
-        default=None,
-        env="CHROMA_DATABASE"
-    )
-    chroma_collection: Optional[str] = Field(
-        default=None,
-        env="CHROMA_COLLECTION"
-    )
+    gemini_api_key: Optional[str] = Field(default=None)
+    chroma_api_key: Optional[str] = Field(default=None)
+    chroma_tenant: Optional[str] = Field(default=None)
+    chroma_database: Optional[str] = Field(default=None)
+    chroma_collection: Optional[str] = Field(default=None)
 
     @field_validator("google_credentials_json", mode="before")
     @classmethod
@@ -113,19 +105,58 @@ class Settings(BaseSettings):
     @property
     def google_credentials(self) -> dict:
         """Get Google credentials as dict"""
+        # Try Streamlit secrets first
+        try:
+            if hasattr(st, 'secrets'):
+                secrets_creds = st.secrets.get("GOOGLE_CREDENTIALS_JSON")
+                if secrets_creds:
+                    if isinstance(secrets_creds, dict):
+                        return secrets_creds
+                    elif isinstance(secrets_creds, str):
+                        return json.loads(secrets_creds)
+        except Exception as e:
+            pass
+
+        # Try environment variables
         if self.google_credentials_json:
             return json.loads(self.google_credentials_json)
-        elif self.google_credentials_path:
+        elif self.google_credentials_path and os.path.exists(self.google_credentials_path):
             with open(self.google_credentials_path, 'r') as f:
                 return json.load(f)
         else:
-            raise ValueError("Either GOOGLE_CREDENTIALS_PATH or GOOGLE_CREDENTIALS_JSON must be set")
+            raise ValueError(
+                "Google credentials not found. Set GOOGLE_CREDENTIALS_JSON in Streamlit secrets "
+                "or GOOGLE_CREDENTIALS_PATH in environment"
+            )
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
+    def load_from_streamlit_secrets(self):
+        """Load settings from Streamlit secrets"""
+        try:
+            if hasattr(st, 'secrets'):
+                self.google_drive_root_folder_id = st.secrets.get(
+                    "GOOGLE_DRIVE_ROOT_FOLDER_ID",
+                    self.google_drive_root_folder_id
+                )
+                self.invoice_sheet_id = st.secrets.get(
+                    "INVOICE_SHEET_ID",
+                    self.invoice_sheet_id
+                )
+                self.dashboard_sheet_id = st.secrets.get(
+                    "DASHBOARD_SHEET_ID",
+                    self.dashboard_sheet_id
+                )
+                self.default_uploader = st.secrets.get(
+                    "DEFAULT_UPLOADER",
+                    self.default_uploader
+                )
+        except Exception:
+            pass
 
 
-# Singleton instance
-settings = Settings()
+def get_settings() -> Settings:
+    """Get settings instance (cached in Streamlit session)"""
+    if 'settings' not in st.session_state:
+        settings = Settings()
+        settings.load_from_streamlit_secrets()
+        st.session_state.settings = settings
+    return st.session_state.settings

@@ -6,7 +6,7 @@ import gspread
 from google.oauth2 import service_account
 from core.exceptions import SheetsAPIError
 from core.models import ShipmentInfo, DocumentMetadata
-from config.settings import settings
+from config.settings import get_settings
 from config.logging_config import get_logger
 from utils.retry import retry_on_api_error
 
@@ -24,11 +24,13 @@ class SheetsService:
     def __init__(self):
         """Initialize Sheets service"""
         try:
+            settings = get_settings()
             credentials = service_account.Credentials.from_service_account_info(
                 settings.google_credentials,
                 scopes=SCOPES
             )
             self.client = gspread.authorize(credentials)
+            self.settings = settings
             logger.info("Sheets service initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize Sheets service: {e}")
@@ -46,8 +48,8 @@ class SheetsService:
             List of matching ShipmentInfo
         """
         try:
-            sheet = self.client.open_by_key(settings.invoice_sheet_id)
-            worksheet = sheet.worksheet(settings.invoice_sheet_name)
+            sheet = self.client.open_by_key(self.settings.invoice_sheet_id)
+            worksheet = sheet.worksheet(self.settings.invoice_sheet_name)
 
             # Get all records
             records = worksheet.get_all_records()
@@ -94,8 +96,8 @@ class SheetsService:
             metadata: Document metadata to log
         """
         try:
-            sheet = self.client.open_by_key(settings.dashboard_sheet_id)
-            worksheet = sheet.worksheet(settings.dashboard_sheet_name)
+            sheet = self.client.open_by_key(self.settings.dashboard_sheet_id)
+            worksheet = sheet.worksheet(self.settings.dashboard_sheet_name)
 
             # Prepare row data (18 columns)
             row = [
@@ -143,8 +145,8 @@ class SheetsService:
             List of upload log records
         """
         try:
-            sheet = self.client.open_by_key(settings.dashboard_sheet_id)
-            worksheet = sheet.worksheet(settings.dashboard_sheet_name)
+            sheet = self.client.open_by_key(self.settings.dashboard_sheet_id)
+            worksheet = sheet.worksheet(self.settings.dashboard_sheet_name)
 
             records = worksheet.get_all_records()
 
