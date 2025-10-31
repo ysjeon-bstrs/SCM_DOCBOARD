@@ -106,14 +106,19 @@ class Settings(BaseSettings):
     def google_credentials(self) -> dict:
         """Get Google credentials as dict"""
         # Try Streamlit secrets first (as a TOML section)
+        # Check multiple possible key names
+        possible_keys = ["GOOGLE_CREDENTIALS_JSON", "google_credentials_json", "google_sheets"]
+
         try:
-            if hasattr(st, 'secrets') and "GOOGLE_CREDENTIALS_JSON" in st.secrets:
-                secrets_creds = st.secrets["GOOGLE_CREDENTIALS_JSON"]
-                if isinstance(secrets_creds, dict):
-                    # Convert streamlit secrets proxy to dict
-                    return dict(secrets_creds)
-                elif isinstance(secrets_creds, str):
-                    return json.loads(secrets_creds)
+            if hasattr(st, 'secrets'):
+                for key in possible_keys:
+                    if key in st.secrets:
+                        secrets_creds = st.secrets[key]
+                        if isinstance(secrets_creds, dict):
+                            # Convert streamlit secrets proxy to dict
+                            return dict(secrets_creds)
+                        elif isinstance(secrets_creds, str):
+                            return json.loads(secrets_creds)
         except Exception as e:
             # Log the error but continue to try other methods
             import logging
