@@ -2,19 +2,48 @@
 SCM Document Manager - Streamlit App
 """
 import streamlit as st
-from config.logging_config import setup_logging
-from config.settings import settings
 
-# Setup logging
-setup_logging()
-
-# Page config
+# Page config (must be first)
 st.set_page_config(
     page_title="SCM Document Manager",
     page_icon="📦",
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Lazy imports after page config
+from config.logging_config import setup_logging
+from config.settings import get_settings
+
+# Setup logging
+setup_logging()
+
+# Get settings (lazy loaded)
+try:
+    settings = get_settings()
+except Exception as e:
+    st.error(f"⚠️ Configuration Error: {e}")
+    st.markdown("""
+    ### Setup Required
+
+    Please configure the following in Streamlit Secrets or .env file:
+
+    ```toml
+    # .streamlit/secrets.toml
+    GOOGLE_DRIVE_ROOT_FOLDER_ID = "your_folder_id"
+    INVOICE_SHEET_ID = "your_invoice_sheet_id"
+    DASHBOARD_SHEET_ID = "your_dashboard_sheet_id"
+
+    [GOOGLE_CREDENTIALS_JSON]
+    type = "service_account"
+    project_id = "your-project"
+    private_key_id = "..."
+    private_key = "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+    client_email = "your-service-account@your-project.iam.gserviceaccount.com"
+    # ... rest of service account JSON
+    ```
+    """)
+    st.stop()
 
 # Custom CSS
 st.markdown("""
@@ -97,8 +126,12 @@ if page == "🏠 Home":
 
 elif page == "📤 Upload Document":
     # Import upload page
-    from ui.pages import upload_page
-    upload_page.render()
+    try:
+        from ui.pages import upload_page
+        upload_page.render()
+    except Exception as e:
+        st.error(f"Error loading upload page: {e}")
+        st.exception(e)
 
 elif page == "📊 Dashboard":
     st.markdown("## 📊 Document Dashboard")

@@ -6,7 +6,7 @@ from typing import Optional
 from core.models import DocumentMetadata, UploadResult
 from core.enums import UploadStatus
 from core.exceptions import ValidationError
-from config.settings import settings
+from config.settings import get_settings
 from config.logging_config import get_logger
 from utils.folder_utils import determine_shipment_category, build_folder_path, build_file_name
 from .drive_service import DriveService
@@ -24,6 +24,7 @@ class DocumentService:
         sheets_service: Optional[SheetsService] = None
     ):
         """Initialize document service"""
+        self.settings = get_settings()
         self.drive = drive_service or DriveService()
         self.sheets = sheets_service or SheetsService()
 
@@ -61,14 +62,14 @@ class DocumentService:
         try:
             # Validate file size
             file_size_bytes = len(file_content)
-            if file_size_bytes > settings.max_file_size_bytes:
+            if file_size_bytes > self.settings.max_file_size_bytes:
                 raise ValidationError(
                     f"File size ({file_size_bytes / 1024 / 1024:.2f}MB) exceeds limit "
-                    f"({settings.max_file_size_mb}MB)"
+                    f"({self.settings.max_file_size_mb}MB)"
                 )
 
             # Use default uploader if not provided
-            uploader = uploader or settings.default_uploader
+            uploader = uploader or self.settings.default_uploader
 
             # Determine shipment category and folder path
             category = determine_shipment_category(
