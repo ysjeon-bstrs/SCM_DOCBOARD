@@ -105,17 +105,19 @@ class Settings(BaseSettings):
     @property
     def google_credentials(self) -> dict:
         """Get Google credentials as dict"""
-        # Try Streamlit secrets first
+        # Try Streamlit secrets first (as a TOML section)
         try:
-            if hasattr(st, 'secrets'):
-                secrets_creds = st.secrets.get("GOOGLE_CREDENTIALS_JSON")
-                if secrets_creds:
-                    if isinstance(secrets_creds, dict):
-                        return secrets_creds
-                    elif isinstance(secrets_creds, str):
-                        return json.loads(secrets_creds)
+            if hasattr(st, 'secrets') and "GOOGLE_CREDENTIALS_JSON" in st.secrets:
+                secrets_creds = st.secrets["GOOGLE_CREDENTIALS_JSON"]
+                if isinstance(secrets_creds, dict):
+                    # Convert streamlit secrets proxy to dict
+                    return dict(secrets_creds)
+                elif isinstance(secrets_creds, str):
+                    return json.loads(secrets_creds)
         except Exception as e:
-            pass
+            # Log the error but continue to try other methods
+            import logging
+            logging.warning(f"Failed to load credentials from Streamlit secrets: {e}")
 
         # Try environment variables
         if self.google_credentials_json:
@@ -124,9 +126,16 @@ class Settings(BaseSettings):
             with open(self.google_credentials_path, 'r') as f:
                 return json.load(f)
         else:
+            # Debug info
+            has_secrets = hasattr(st, 'secrets')
+            secrets_keys = list(st.secrets.keys()) if has_secrets else []
+
             raise ValueError(
-                "Google credentials not found. Set GOOGLE_CREDENTIALS_JSON in Streamlit secrets "
-                "or GOOGLE_CREDENTIALS_PATH in environment"
+                f"Google credentials not found. "
+                f"Streamlit secrets available: {has_secrets}, "
+                f"Keys in secrets: {secrets_keys}. "
+                f"Set GOOGLE_CREDENTIALS_JSON in Streamlit secrets "
+                f"or GOOGLE_CREDENTIALS_PATH in environment"
             )
 
     def load_from_streamlit_secrets(self):
