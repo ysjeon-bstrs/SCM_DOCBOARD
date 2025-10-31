@@ -48,11 +48,36 @@ class SheetsService:
             List of matching ShipmentInfo
         """
         try:
+            logger.info(f"Searching for '{search_term}' in sheet ID: {self.settings.invoice_sheet_id}")
+            logger.info(f"Looking for worksheet: {self.settings.invoice_sheet_name}")
+
+            # Open spreadsheet
             sheet = self.client.open_by_key(self.settings.invoice_sheet_id)
-            worksheet = sheet.worksheet(self.settings.invoice_sheet_name)
+            logger.info(f"Opened spreadsheet: {sheet.title}")
+
+            # List all worksheets for debugging
+            all_worksheets = [ws.title for ws in sheet.worksheets()]
+            logger.info(f"Available worksheets: {all_worksheets}")
+
+            # Try to get the worksheet
+            try:
+                worksheet = sheet.worksheet(self.settings.invoice_sheet_name)
+                logger.info(f"Found worksheet: {worksheet.title}")
+            except gspread.exceptions.WorksheetNotFound:
+                logger.error(f"Worksheet '{self.settings.invoice_sheet_name}' not found. Available: {all_worksheets}")
+                raise SheetsAPIError(
+                    f"워크시트 '{self.settings.invoice_sheet_name}'를 찾을 수 없습니다. "
+                    f"사용 가능한 시트: {', '.join(all_worksheets)}"
+                )
 
             # Get all records
             records = worksheet.get_all_records()
+            logger.info(f"Retrieved {len(records)} records from sheet")
+
+            # Show column headers for debugging
+            if records:
+                headers = list(records[0].keys())
+                logger.info(f"Sheet columns: {headers}")
 
             # Filter by search term
             search_lower = search_term.lower()
@@ -83,9 +108,12 @@ class SheetsService:
             logger.info(f"Found {len(matches)} shipments matching '{search_term}'")
             return matches
 
+        except SheetsAPIError:
+            # Re-raise our custom errors
+            raise
         except Exception as e:
-            logger.error(f"Shipment search failed: {e}")
-            raise SheetsAPIError(f"Failed to search shipments: {e}")
+            logger.error(f"Shipment search failed: {e}", exc_info=True)
+            raise SheetsAPIError(f"선적 검색 실패: {e}")
 
     @retry_on_api_error(max_attempts=3)
     def append_upload_log(self, metadata: DocumentMetadata) -> None:
