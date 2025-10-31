@@ -3,11 +3,12 @@ Logging configuration
 """
 import logging
 import sys
-from .settings import settings
+from .settings import get_settings
 
 
 def setup_logging():
     """Configure logging"""
+    settings = get_settings()
     log_level = getattr(logging, settings.log_level.upper(), logging.INFO)
 
     logging.basicConfig(
