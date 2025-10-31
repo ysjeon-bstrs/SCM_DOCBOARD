@@ -105,24 +105,57 @@ class Settings(BaseSettings):
     @property
     def google_credentials(self) -> dict:
         """Get Google credentials as dict"""
-        # Try Streamlit secrets first (as a TOML section)
-        # Check multiple possible key names
-        possible_keys = ["GOOGLE_CREDENTIALS_JSON", "google_credentials_json", "google_sheets"]
+        import logging
+        logger = logging.getLogger(__name__)
 
-        try:
-            if hasattr(st, 'secrets'):
-                for key in possible_keys:
-                    if key in st.secrets:
-                        secrets_creds = st.secrets[key]
-                        if isinstance(secrets_creds, dict):
-                            # Convert streamlit secrets proxy to dict
-                            return dict(secrets_creds)
-                        elif isinstance(secrets_creds, str):
-                            return json.loads(secrets_creds)
-        except Exception as e:
-            # Log the error but continue to try other methods
-            import logging
-            logging.warning(f"Failed to load credentials from Streamlit secrets: {e}")
+        # Try Streamlit secrets first (as a TOML section)
+        # Check multiple possible key paths (including nested paths)
+        possible_paths = [
+            ["GOOGLE_CREDENTIALS_JSON"],
+            ["google_credentials_json"],
+            ["google_sheets", "credentials"],  # Nested path
+            ["google_sheets"],
+        ]
+
+        if hasattr(st, 'secrets'):
+            for path in possible_paths:
+                try:
+                    # Navigate nested path
+                    current = st.secrets
+                    found = True
+                    for key in path:
+                        if key in current:
+                            current = current[key]
+                        else:
+                            found = False
+                            break
+
+                    if not found:
+                        continue
+
+                    path_str = ".".join(path)
+                    logger.info(f"Found credentials at path: {path_str}")
+                    logger.info(f"Credentials type: {type(current)}")
+
+                    # Try to convert to dict
+                    if isinstance(current, dict):
+                        result = dict(current)
+                        logger.info(f"Successfully loaded credentials from {path_str} as dict")
+                        return result
+                    elif isinstance(current, str):
+                        result = json.loads(current)
+                        logger.info(f"Successfully loaded credentials from {path_str} as JSON string")
+                        return result
+                    else:
+                        # Try to convert to dict anyway (Streamlit secrets proxy)
+                        try:
+                            result = dict(current)
+                            logger.info(f"Successfully converted {path_str} to dict")
+                            return result
+                        except Exception as conv_error:
+                            logger.warning(f"Could not convert {path_str} to dict: {conv_error}")
+                except Exception as e:
+                    logger.warning(f"Error accessing path '{'.'.join(path)}': {e}", exc_info=True)
 
         # Try environment variables
         if self.google_credentials_json:
