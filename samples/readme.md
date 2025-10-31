@@ -1,1 +1,1 @@
-this is for new directory "samples"
+this is for the new directory "samples"
