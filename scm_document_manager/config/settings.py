@@ -105,24 +105,40 @@ class Settings(BaseSettings):
     @property
     def google_credentials(self) -> dict:
         """Get Google credentials as dict"""
+        import logging
+        logger = logging.getLogger(__name__)
+
         # Try Streamlit secrets first (as a TOML section)
         # Check multiple possible key names
         possible_keys = ["GOOGLE_CREDENTIALS_JSON", "google_credentials_json", "google_sheets"]
 
-        try:
-            if hasattr(st, 'secrets'):
-                for key in possible_keys:
+        if hasattr(st, 'secrets'):
+            for key in possible_keys:
+                try:
                     if key in st.secrets:
+                        logger.info(f"Found credentials key: {key}")
                         secrets_creds = st.secrets[key]
+                        logger.info(f"Credentials type: {type(secrets_creds)}")
+
+                        # Try to convert to dict
                         if isinstance(secrets_creds, dict):
-                            # Convert streamlit secrets proxy to dict
-                            return dict(secrets_creds)
+                            result = dict(secrets_creds)
+                            logger.info(f"Successfully loaded credentials from {key} as dict")
+                            return result
                         elif isinstance(secrets_creds, str):
-                            return json.loads(secrets_creds)
-        except Exception as e:
-            # Log the error but continue to try other methods
-            import logging
-            logging.warning(f"Failed to load credentials from Streamlit secrets: {e}")
+                            result = json.loads(secrets_creds)
+                            logger.info(f"Successfully loaded credentials from {key} as JSON string")
+                            return result
+                        else:
+                            # Try to convert to dict anyway (Streamlit secrets proxy)
+                            try:
+                                result = dict(secrets_creds)
+                                logger.info(f"Successfully converted {key} to dict")
+                                return result
+                            except Exception as conv_error:
+                                logger.warning(f"Could not convert {key} to dict: {conv_error}")
+                except Exception as e:
+                    logger.warning(f"Error accessing key '{key}': {e}", exc_info=True)
 
         # Try environment variables
         if self.google_credentials_json:
