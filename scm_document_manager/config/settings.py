@@ -39,7 +39,7 @@ class Settings(BaseSettings):
         description="SCM 통합 시트 ID"
     )
     invoice_sheet_name: str = Field(
-        default="scm통합",
+        default="SCM_통합",
         description="SCM 통합 시트 탭 이름"
     )
     dashboard_sheet_id: str = Field(
@@ -188,9 +188,17 @@ class Settings(BaseSettings):
                     "INVOICE_SHEET_ID",
                     self.invoice_sheet_id
                 )
+                self.invoice_sheet_name = st.secrets.get(
+                    "INVOICE_SHEET_NAME",
+                    self.invoice_sheet_name
+                )
                 self.dashboard_sheet_id = st.secrets.get(
                     "DASHBOARD_SHEET_ID",
                     self.dashboard_sheet_id
+                )
+                self.dashboard_sheet_name = st.secrets.get(
+                    "DASHBOARD_SHEET_NAME",
+                    self.dashboard_sheet_name
                 )
                 self.default_uploader = st.secrets.get(
                     "DEFAULT_UPLOADER",
