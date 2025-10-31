@@ -5,7 +5,7 @@ import streamlit as st
 
 # Page config (must be first)
 st.set_page_config(
-    page_title="SCM Document Manager",
+    page_title="SCM 서류 관리 시스템",
     page_icon="📦",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -22,11 +22,11 @@ setup_logging()
 try:
     settings = get_settings()
 except Exception as e:
-    st.error(f"⚠️ Configuration Error: {e}")
+    st.error(f"⚠️ 설정 오류: {e}")
     st.markdown("""
-    ### Setup Required
+    ### 설정 필요
 
-    Please configure the following in Streamlit Secrets or .env file:
+    Streamlit Secrets 또는 .env 파일에 다음을 설정하세요:
 
     ```toml
     # .streamlit/secrets.toml
@@ -66,93 +66,93 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Main UI
-st.markdown('<div class="main-header">📦 SCM Document Manager</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">AI-powered logistics document management system</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">📦 SCM 서류 관리 시스템</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">AI 기반 물류 서류 자동 관리 시스템</div>', unsafe_allow_html=True)
 
 # Sidebar navigation
 with st.sidebar:
-    st.markdown("### Navigation")
+    st.markdown("### 메뉴")
     page = st.radio(
-        "Select Page",
-        ["🏠 Home", "📤 Upload Document", "📊 Dashboard", "🔍 Search"],
+        "페이지 선택",
+        ["🏠 홈", "📤 서류 업로드", "📊 대시보드", "🔍 검색"],
         label_visibility="collapsed"
     )
 
     st.markdown("---")
-    st.markdown("### System Info")
-    st.info(f"**Uploader:** {settings.default_uploader}")
-    st.info(f"**Max File Size:** {settings.max_file_size_mb}MB")
+    st.markdown("### 시스템 정보")
+    st.info(f"**업로더:** {settings.default_uploader}")
+    st.info(f"**최대 파일 크기:** {settings.max_file_size_mb}MB")
 
 # Page routing
-if page == "🏠 Home":
-    st.markdown("## Welcome to SCM Document Manager")
+if page == "🏠 홈":
+    st.markdown("## SCM 서류 관리 시스템에 오신 것을 환영합니다")
 
     col1, col2, col3 = st.columns(3)
 
     with col1:
         st.metric(
-            label="Total Shipments",
+            label="총 선적 건수",
             value="0",
-            delta="Ready to upload"
+            delta="업로드 준비"
         )
 
     with col2:
         st.metric(
-            label="Documents Uploaded",
+            label="업로드된 서류",
             value="0",
-            delta="+0 today"
+            delta="오늘 +0"
         )
 
     with col3:
         st.metric(
-            label="Storage Used",
+            label="사용 중인 저장공간",
             value="0 MB"
         )
 
     st.markdown("---")
-    st.markdown("### Quick Start")
+    st.markdown("### 빠른 시작 가이드")
     st.markdown("""
-    1. **Upload Document**: Click '📤 Upload Document' in the sidebar
-    2. **Select Shipment**: Search for your shipment ID
-    3. **Choose Document Type**: Select the document type or create a new one
-    4. **Upload**: Upload your file
+    1. **서류 업로드**: 사이드바에서 '📤 서류 업로드' 클릭
+    2. **선적 선택**: 송장 번호로 선적 검색
+    3. **서류 유형 선택**: 서류 유형 선택
+    4. **업로드**: 파일 업로드
 
-    The system will:
-    - ✅ Automatically categorize and store your document
-    - ✅ Create proper folder structure
-    - ✅ Log all metadata to Dashboard
-    - ✅ Make it searchable (Phase 2: AI search)
+    시스템이 자동으로:
+    - ✅ 서류를 분류하고 저장
+    - ✅ 폴더 구조 생성
+    - ✅ 대시보드에 메타데이터 기록
+    - ✅ 검색 가능하게 만듦 (Phase 2: AI 검색)
     """)
 
-elif page == "📤 Upload Document":
+elif page == "📤 서류 업로드":
     # Import upload page
     try:
         from ui.pages import upload_page
         upload_page.render()
     except Exception as e:
-        st.error(f"Error loading upload page: {e}")
+        st.error(f"업로드 페이지 로딩 오류: {e}")
         st.exception(e)
 
-elif page == "📊 Dashboard":
-    st.markdown("## 📊 Document Dashboard")
-    st.info("Dashboard view coming soon...")
+elif page == "📊 대시보드":
+    st.markdown("## 📊 서류 대시보드")
+    st.info("대시보드 뷰 준비 중...")
 
-    st.markdown("### Recent Uploads")
-    st.markdown("*No uploads yet*")
+    st.markdown("### 최근 업로드")
+    st.markdown("*아직 업로드된 서류가 없습니다*")
 
-elif page == "🔍 Search":
-    st.markdown("## 🔍 Search Documents")
-    st.info("Search functionality coming soon...")
+elif page == "🔍 검색":
+    st.markdown("## 🔍 서류 검색")
+    st.info("검색 기능 준비 중...")
 
-    search_term = st.text_input("Search by shipment ID, document type, or keywords")
-    if st.button("Search"):
-        st.warning("Search feature will be available in Phase 2 (AI/Vector DB)")
+    search_term = st.text_input("선적 ID, 서류 유형, 키워드로 검색")
+    if st.button("검색"):
+        st.warning("검색 기능은 Phase 2 (AI/Vector DB)에서 제공될 예정입니다")
 
 # Footer
 st.markdown("---")
 st.markdown(
     "<div style='text-align: center; color: #666; font-size: 0.9rem;'>"
-    "SCM Document Manager v1.0 (MVP) | Built with Streamlit + Google Drive + Sheets"
+    "SCM 서류 관리 시스템 v1.0 (MVP) | Streamlit + Google Drive + Sheets 기반"
     "</div>",
     unsafe_allow_html=True
 )
