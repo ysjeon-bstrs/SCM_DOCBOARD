@@ -116,6 +116,56 @@ class SheetsService:
             raise SheetsAPIError(f"선적 검색 실패: {e}")
 
     @retry_on_api_error(max_attempts=3)
+    def get_all_shipments(self, limit: int = 100) -> List[ShipmentInfo]:
+        """
+        Get all shipments from SCM 통합 시트
+
+        Args:
+            limit: Maximum number of shipments to return (default 100)
+
+        Returns:
+            List of ShipmentInfo objects
+        """
+        try:
+            logger.info(f"Fetching all shipments from sheet ID: {self.settings.invoice_sheet_id}")
+
+            # Open spreadsheet
+            sheet = self.client.open_by_key(self.settings.invoice_sheet_id)
+            worksheet = sheet.worksheet(self.settings.invoice_sheet_name)
+
+            # Get all records
+            records = worksheet.get_all_records()
+            logger.info(f"Retrieved {len(records)} total records from sheet")
+
+            # Parse records
+            shipments = []
+            for record in records[:limit]:  # Limit to avoid performance issues
+                try:
+                    shipment = ShipmentInfo(
+                        invoice_no=record.get('인보이스 번호', ''),
+                        ticket_name=record.get('티켓명'),
+                        carrier_name=record.get('carrier_name', ''),
+                        carrier_mode=record.get('carrier_mode', ''),
+                        origin=record.get('출발창고', ''),
+                        destination=record.get('도착창고', ''),
+                        onboard_date=str(record.get('onboard_date', '')),
+                        bl_no=record.get('bl_no'),
+                        status=record.get('status')
+                    )
+                    if shipment.invoice_no:  # Only add if invoice number exists
+                        shipments.append(shipment)
+                except Exception as e:
+                    logger.warning(f"Failed to parse shipment record: {e}")
+                    continue
+
+            logger.info(f"Parsed {len(shipments)} shipments successfully")
+            return shipments
+
+        except Exception as e:
+            logger.error(f"Failed to get all shipments: {e}", exc_info=True)
+            raise SheetsAPIError(f"선적 목록 조회 실패: {e}")
+
+    @retry_on_api_error(max_attempts=3)
     def append_upload_log(self, metadata: DocumentMetadata) -> None:
         """
         Append upload log to Dashboard sheet
