@@ -46,7 +46,7 @@ if 'all_shipments' not in st.session_state:
         st.error(f"선적 데이터 로딩 실패: {e}")
         st.session_state.all_shipments = []
 
-# Minimal CSS - Clean and simple
+# CSS with card styling
 st.markdown("""
     <style>
     /* Hide sidebar completely */
@@ -56,8 +56,8 @@ st.markdown("""
 
     /* Reduce padding */
     .block-container {
-        padding-top: 1rem;
-        padding-bottom: 1rem;
+        padding-top: 1.5rem;
+        padding-bottom: 2rem;
     }
 
     /* Button styling */
@@ -70,6 +70,28 @@ st.markdown("""
 
     .stButton>button:hover {
         background-color: #4338ca;
+    }
+
+    /* Card styling for sections */
+    .section-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        margin-bottom: 1.5rem;
+    }
+
+    .section-header {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #111827;
+        margin-bottom: 0.25rem;
+    }
+
+    .section-caption {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-bottom: 1.25rem;
     }
 
     /* Enlarge file uploader area */
@@ -89,15 +111,6 @@ st.markdown("""
         margin-bottom: 0.25rem;
     }
 
-    /* Section headers */
-    h2 {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: #111827;
-        margin-top: 0.5rem;
-        margin-bottom: 0.25rem;
-    }
-
     /* Captions */
     .caption {
         font-size: 0.875rem;
@@ -111,11 +124,10 @@ st.markdown("""
 st.title("📦 SCM 서류 관리 시스템")
 st.markdown(f"<div class='caption'>업로더: {settings.default_uploader} | 총 {len(st.session_state.all_shipments)}건의 선적</div>", unsafe_allow_html=True)
 
-st.divider()
-
 # ===== 1. 서류 업로드 (전체 너비, 최우선) =====
-st.subheader("📤 서류 업로드")
-st.caption("Drive에 저장하고 한 번에 벡터화합니다")
+st.markdown('<div class="section-card">', unsafe_allow_html=True)
+st.markdown('<div class="section-header">📤 서류 업로드</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-caption">Drive에 저장하고 한 번에 벡터화합니다</div>', unsafe_allow_html=True)
 
 # File uploader (enlarged)
 uploaded_file = st.file_uploader(
@@ -205,11 +217,12 @@ if st.button("🚀 업로드 & 벡터화", type="primary", use_container_width=T
         else:
             st.error("선택한 송장을 찾을 수 없습니다")
 
-st.divider()
+st.markdown('</div>', unsafe_allow_html=True)
 
 # ===== 2. 선적 서류 현황 (전체 너비) =====
-st.subheader("📋 선적 서류 현황")
-st.caption("진행 중인 모든 선적 및 필요 서류 개요")
+st.markdown('<div class="section-card">', unsafe_allow_html=True)
+st.markdown('<div class="section-header">📋 선적 서류 현황</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-caption">진행 중인 모든 선적 및 필요 서류 개요</div>', unsafe_allow_html=True)
 
 # Display shipment data
 if st.session_state.all_shipments:
@@ -239,11 +252,12 @@ if st.session_state.all_shipments:
 else:
     st.info("선적 데이터가 없습니다")
 
-st.divider()
+st.markdown('</div>', unsafe_allow_html=True)
 
 # ===== 3. 최근 활동 (전체 너비) =====
-st.subheader("📊 최근 활동")
-st.caption("모든 서류 업로드 및 분석 로그")
+st.markdown('<div class="section-card">', unsafe_allow_html=True)
+st.markdown('<div class="section-header">📊 최근 활동</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-caption">모든 서류 업로드 및 분석 로그</div>', unsafe_allow_html=True)
 
 # Get recent logs
 try:
@@ -275,7 +289,7 @@ try:
 except Exception as e:
     st.warning("최근 활동을 불러올 수 없습니다")
 
-st.divider()
+st.markdown('</div>', unsafe_allow_html=True)
 
 # ===== 4. 서류 Q&A (맨 아래, Phase 2-3 예정) =====
 with st.expander("🔍 서류 Q&A (Phase 2-3 예정)", expanded=False):

@@ -112,6 +112,28 @@ class DriveService:
             logger.warning(f"Folder search failed: {folder_name}, error: {e}")
             return None
 
+    @retry_on_api_error(max_attempts=3)
+    def verify_folder_access(self, folder_id: str) -> bool:
+        """
+        Verify that we have access to a folder
+
+        Args:
+            folder_id: Folder ID to verify
+
+        Returns:
+            True if accessible, False otherwise
+        """
+        try:
+            self.service.files().get(
+                fileId=folder_id,
+                fields='id, name, mimeType'
+            ).execute()
+            logger.info(f"Folder access verified: {folder_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Cannot access folder {folder_id}: {e}")
+            return False
+
     def ensure_folder_path(
         self,
         folder_path: str,
@@ -129,6 +151,14 @@ class DriveService:
         """
         parts = folder_path.strip('/').split('/')
         current_parent_id = root_folder_id or self.settings.google_drive_root_folder_id
+
+        # Verify root folder access first
+        if not self.verify_folder_access(current_parent_id):
+            raise DriveAPIError(
+                f"Cannot access root folder (ID: {current_parent_id}). "
+                f"Please ensure the folder exists and is shared with the service account: "
+                f"{self.settings.google_credentials.get('client_email', 'N/A')}"
+            )
 
         for part in parts:
             # Try to find existing folder
